@@ -1,54 +1,43 @@
 <?php
-//##copyright##
 
-if (iaView::REQUEST_HTML == $iaView->getRequestType() && $iaView->blockExists('valutakg_rates'))
-{
-	require_once IA_INCLUDES . 'phpfastcache' . IA_DS . 'phpfastcache.php';
+if (iaView::REQUEST_HTML == $iaView->getRequestType() && $iaView->blockExists('valutakg_rates')) {
+    $iaXml = $iaCore->factory('xml');
+    $service_url = 'https://valuta.kg/api/rate/';
 
-	$iaCache = phpFastCache('auto', array('path' => IA_CACHEDIR));
+    if ('nbkr' == $iaCore->get('valutakg_type')){
+        $service_url .= 'nbkr.json';
+    }
 
-	$rates = $iaCache->get('valutakg_rates');
-	if (null == $rates)
-	{
-		$iaXml = $iaCore->factory('xml');
+    if('average' == $iaCore->get('valutakg_type')){
+        $service_url .= 'average.json';
+    }
 
-		$url = 'http://m.valuta.kg/api/';
-		if ('nbkr' == $iaCore->get('valutakg_type'))
-		{
-			$url .= 'nbkr';
-		}
+    $curl_response = iaUtil::getPageContent($service_url);
+    $result = json_decode($curl_response, true);
 
-		if ($result = $iaXml->parse_file($url))
-		{
-			if ('nbkr' == $iaCore->get('valutakg_type'))
-			{
-				foreach ($result->currency as $currency)
-				{
-					$rates['rates'][(string)$currency->title_alias] = array(
-						'title' => (string)$currency->title,
-						'rate' => (string)$currency->rate,
-						'direction' => (string)$currency->direction
-					);
-				}
-				$rates['date'] = (string)$result->date;
-			}
-			else
-			{
-				foreach ($result->currency as $currency)
-				{
-					$rates['rates'][(string)$currency->title_alias] = array(
-						'title' => (string)$currency->title,
-						'buy' => (string)$currency->rates->buy_rate,
-						'sell' => (string)$currency->rates->sell_rate,
-						'date' => (string)$currency->rates->date_start,
-					);
-				}
-				$rates['date'] = (string)$currency->rates->date_start;
-			}
-		}
+    //$rates = array();
 
-		$iaCache->set('valutakg_rates', $rates, (int)$iaCore->get('valutkg_cachetime') * 60);
-	}
+    if ('nbkr' == $iaCore->get('valutakg_type')) {
+        foreach ($result['data']['rates'] as $key => $value) {
+            $rates[] = array(
+                'title' => $key,
+                'rate' => $value[0],
+                'direction' => $value[1]
+            );
+        }
+        $rates['updated']['date']=$result['data']['last_update'];
+    }
+    else{
+        foreach ($result['data'] as $key=> $value){
+            $rates[] = array(
+                'title' => $value['title'],
+                'buy' => $value['rates']['buy_rate'],
+                'sell' => $value['rates']['sell_rate'],
+                'date' => $value['rates']['date_start']
+            );
+        }
+        $rates['updated']['date']=$value['rates']['date_start'];
+    }
 
-	$iaView->assign('rates', $rates);
+   $iaView->assign('rates', $rates);
 }
