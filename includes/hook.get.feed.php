@@ -1,54 +1,73 @@
 <?php
-//##copyright##
+/******************************************************************************
+ *
+ * Subrion - open source content management system
+ * Copyright (C) 2018 Intelliants, LLC <https://intelliants.com>
+ *
+ * This file is part of Subrion.
+ *
+ * Subrion is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Subrion is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Subrion. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * @link https://subrion.org/
+ *
+ ******************************************************************************/
 
 if (iaView::REQUEST_HTML == $iaView->getRequestType() && $iaView->blockExists('valutakg_rates'))
 {
-	require_once IA_INCLUDES . 'phpfastcache' . IA_DS . 'phpfastcache.php';
+    $url = 'https://valuta.kg/api/rate/';
 
-	$iaCache = phpFastCache('auto', array('path' => IA_CACHEDIR));
+    $rates = $this->iaCache->get('valutakg_rates', 3600, true);
 
-	$rates = $iaCache->get('valutakg_rates');
-	if (null == $rates)
-	{
-		$iaXml = $iaCore->factory('xml');
+    if(false === $rates){
 
-		$url = 'http://m.valuta.kg/api/';
-		if ('nbkr' == $iaCore->get('valutakg_type'))
-		{
-			$url .= 'nbkr';
-		}
+        if ('nbkr' == $iaCore->get('valutakg_type')){
+            $url .= 'nbkr.json';
+        }
+        if('average' == $iaCore->get('valutakg_type')){
+            $url .= 'average.json';
+        }
 
-		if ($result = $iaXml->parse_file($url))
-		{
-			if ('nbkr' == $iaCore->get('valutakg_type'))
-			{
-				foreach ($result->currency as $currency)
-				{
-					$rates['rates'][(string)$currency->title_alias] = array(
-						'title' => (string)$currency->title,
-						'rate' => (string)$currency->rate,
-						'direction' => (string)$currency->direction
-					);
-				}
-				$rates['date'] = (string)$result->date;
-			}
-			else
-			{
-				foreach ($result->currency as $currency)
-				{
-					$rates['rates'][(string)$currency->title_alias] = array(
-						'title' => (string)$currency->title,
-						'buy' => (string)$currency->rates->buy_rate,
-						'sell' => (string)$currency->rates->sell_rate,
-						'date' => (string)$currency->rates->date_start,
-					);
-				}
-				$rates['date'] = (string)$currency->rates->date_start;
-			}
-		}
+        $curl_response = iaUtil::getPageContent($url);
+        $result = json_decode($curl_response, true);
 
-		$iaCache->set('valutakg_rates', $rates, (int)$iaCore->get('valutkg_cachetime') * 60);
-	}
+        if ('nbkr' == $iaCore->get('valutakg_type'))
+        {
+            foreach ($result['data']['rates'] as $key => $value) {
+                $rates['rates'][$key] = array(
+                    'title' => $key,
+                    'rate' => $value[0],
+                    'direction' => $value[1]
+                );
+            }
+            $rates['updated']['date']=$result['data']['last_update'];
+        }
+        else
+        {
+            foreach ($result['data'] as $key=> $value){
+                $rates['rates'][$key] = array(
+                    'title' => $value['title'],
+                    'buy' => $value['rates']['buy_rate'],
+                    'sell' => $value['rates']['sell_rate'],
+                    'date' => $value['rates']['date_start']
+                );
+            }
+            $rates['updated']['date']=$value['rates']['date_start'];
+        }
+
+        $this->iaCache->write('valutakg_rates', $rates);
+    }
 
 	$iaView->assign('rates', $rates);
 }

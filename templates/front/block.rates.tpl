@@ -1,3 +1,4 @@
+
 {if $rates.rates}
 	<table class="table table-striped table-condensed">
 		{foreach $rates.rates as $currency}
@@ -6,6 +7,7 @@
 				{if 'nbkr' == $core.config.valutakg_type}
 					<td class="text-right">{$currency.rate}</td>
 					<td class="text-center"><i class="icon-arrow-{$currency.direction}"></i></td>
+					<td class="text-center">{if $currency.direction == 'down'}<i class="i	fa fa-angle-{$currency.direction}" style="color:red" {else} <i class="i	fa fa-angle-{$currency.direction}" style="color:green"{/if} ></i></td>
 				{else}
 					<td class="text-right">{$currency.buy}</td>
 					<td class="text-right">{$currency.sell}</td>
@@ -15,7 +17,7 @@
 	</table>
 
 	<p class="text-center text-small muted">
-		Курсы установлены {$rates.date}.<br>
+		Курсы установлены {$rates.updated.date}.<br>
 		Статистика с сайта <a href="http://www.valuta.kg" target="_blank">valuta.kg</a>
 	</p>
 {else}

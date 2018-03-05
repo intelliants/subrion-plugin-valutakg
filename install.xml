@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<plugin name="valutakg">
+<module type="plugin" name="valutakg">
 	<title>Valuta.kg Rates</title>
 	<summary>Currency exchange rates based on valuta.kg data</summary>
 	<author>Intelliants LLC</author>
@@ -11,17 +11,18 @@
 	<configgroup name="valutakg">Valuta.KG</configgroup>
 	<config group="valutakg" name="valutakg_divider" type="divider" description="Valuta.KG">Settings</config>
 	<config group="valutakg" name="valutakg_cachetime" type="text" description="Cache time in minutes">60</config>
-	<config group="valutakg" name="valutakg_type" type="select" values="nbkr,valuta" description="Rates type">valuta</config>
+	<config group="valutakg" name="valutakg_type" type="select" values="nbkr,average" description="Rates type">average</config>
 
 	<phrases>
 		<phrase category="frontend" key="valutakg_no_rates">К сожалению курсы валют не установлены либо отсутствует соединение.</phrase>
 	</phrases>
 
 	<blocks>
-		<block name="valutakg_rates" title="Currency rates" position="left" type="smarty" filename="plugin:valutakg:block.rates.tpl" collapsible="1" classname="box-clear"><![CDATA[]]></block>
+		<block name="valutakg_rates" title="Currency rates" position="left" type="smarty" filename="block.rates.tpl" collapsible="1" order="1" classname="box-clear"><![CDATA[]]></block>
 	</blocks>
 
 	<hooks>
-		<hook name="phpCoreBeforePageDisplay" page_type="front" filename="plugins/valutakg/includes/hook.get.feed.php"><![CDATA[]]></hook>
+		<hook name="phpCoreBeforePageDisplay" page_type="front" filename="hook.get.feed.php"><![CDATA[]]></hook>
+		<hook name="phpConfigurationChange" page_type="admin" filename="hook.configuration.php"><![CDATA[]]></hook>
 	</hooks>
-</plugin>
+</module>
